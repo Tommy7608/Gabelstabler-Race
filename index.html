@@ -383,12 +383,12 @@
         let timeSinceLastPerson = 0;
         let personHorizontalSpeed = 50; // New variable for horizontal speed of people
 
-        // Player (Forklift) object
+        // Player (Forklift) object - sizes are now relative to canvas size
         const forklift = {
             x: 0,
             y: 0,
-            width: 70, 
-            height: 110,
+            width: 0, 
+            height: 0,
             speed: 200, // pixels per second
         };
 
@@ -491,8 +491,11 @@
             gameBackground.style.width = `${size}px`;
             gameBackground.style.height = `${size}px`;
             
+            // Set object sizes relative to canvas
+            forklift.width = canvas.width * 0.15;
+            forklift.height = canvas.height * 0.15;
             forklift.x = (canvas.width / 2) - (forklift.width / 2);
-            forklift.y = canvas.height - forklift.height - 20;
+            forklift.y = canvas.height - forklift.height - canvas.height * 0.05;
 
             obstacles.length = 0; 
             collectibles.length = 0;
@@ -507,20 +510,20 @@
 
             switch(type) {
                 case 'square':
-                    width = 40;
-                    height = 40;
+                    width = canvas.width * 0.08;
+                    height = canvas.height * 0.08;
                     break;
                 case 'rect_h': // Horizontal rectangle
-                    width = 60;
-                    height = 30;
+                    width = canvas.width * 0.12;
+                    height = canvas.height * 0.06;
                     break;
                 case 'rect_v': // Vertical rectangle
-                    width = 30;
-                    height = 60;
+                    width = canvas.width * 0.06;
+                    height = canvas.height * 0.12;
                     break;
                 case 'triangle':
-                    width = 50;
-                    height = 50;
+                    width = canvas.width * 0.1;
+                    height = canvas.height * 0.1;
                     break;
             }
             
@@ -541,14 +544,15 @@
 
         // Function to create and place a single collectible
         function spawnCollectible() {
-            const collectibleRadius = 25; // Increased radius for better visibility
-            const x = Math.random() * (canvas.width - collectibleRadius * 2) + collectibleRadius;
-            const y = -collectibleRadius * 2; // Start above the canvas
+            const collectibleSize = canvas.width * 0.05;
+            const x = Math.random() * (canvas.width - collectibleSize) + collectibleSize / 2;
+            const y = -collectibleSize; // Start above the canvas
 
             collectibles.push({
                 x: x,
                 y: y,
-                radius: collectibleRadius,
+                width: collectibleSize,
+                height: collectibleSize,
                 scoreValue: 5, // Each coin is now worth 5 points
                 speed: collectibleSpeed // Speed at which collectibles fall
             });
@@ -556,8 +560,8 @@
 
         // Function to create and place a single person
         function spawnPerson() {
-            const personWidth = 35; // Made smaller
-            const personHeight = 70; // Made smaller
+            const personWidth = canvas.width * 0.07;
+            const personHeight = canvas.height * 0.1;
             const fromLeft = Math.random() > 0.5; // Randomly decide if person comes from left or right
             const x = fromLeft ? -personWidth : canvas.width;
             const y = -personHeight; // Start above the canvas
@@ -582,7 +586,7 @@
                  // Draw the wood plank slightly bigger and below the pallet
                 if (obstacle.type !== 'triangle') {
                     ctx.fillStyle = '#8B4513'; // Dark brown for wood
-                    ctx.fillRect(obstacle.x - 5, obstacle.y + 5, obstacle.width + 10, obstacle.height + 5);
+                    ctx.fillRect(obstacle.x - (obstacle.width * 0.1), obstacle.y + (obstacle.height * 0.1), obstacle.width * 1.2, obstacle.height * 1.1);
                 }
 
                  ctx.fillStyle = obstacle.color;
@@ -601,14 +605,14 @@
             // Draw Collectibles (using the SVG)
             if (collectibleImageLoaded) {
                 collectibles.forEach(collectible => {
-                    const drawSize = collectible.radius * 2;
-                    ctx.drawImage(collectibleImage, collectible.x - collectible.radius, collectible.y - collectible.radius, drawSize, drawSize);
+                    const drawSize = collectible.width;
+                    ctx.drawImage(collectibleImage, collectible.x - drawSize / 2, collectible.y - drawSize / 2, drawSize, drawSize);
                 });
             } else {
                  // Fallback to drawing circles if SVG is not yet loaded
                 collectibles.forEach(collectible => {
                     ctx.beginPath();
-                    ctx.arc(collectible.x, collectible.y, collectible.radius, 0, Math.PI * 2);
+                    ctx.arc(collectible.x, collectible.y, collectible.width/2, 0, Math.PI * 2);
                     ctx.fillStyle = '#27ae60';
                     ctx.fill();
                     ctx.closePath();
@@ -753,9 +757,9 @@
             for (let i = collectibles.length - 1; i >= 0; i--) {
                 const collectible = collectibles[i];
                 if (
-                    forklift.x < collectible.x + collectible.radius * 2 &&
+                    forklift.x < collectible.x + collectible.width &&
                     forklift.x + forklift.width > collectible.x &&
-                    forklift.y < collectible.y + collectible.radius * 2 &&
+                    forklift.y < collectible.y + collectible.height &&
                     forklift.y + forklift.height > collectible.y
                 ) {
                     score += collectible.scoreValue;
