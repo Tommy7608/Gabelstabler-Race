@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forklift Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #1f2d3a;
+            font-family: 'Inter', sans-serif;
+            color: white;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        #gameBackground {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90vh; /* Match canvas width */
+            height: 90vh; /* Match canvas height */
+            background-color: #5d6b7c;
+            background-image: linear-gradient(45deg, #697889 25%, transparent 25%),
+                              linear-gradient(-45deg, #697889 25%, transparent 25%),
+                              linear-gradient(45deg, transparent 75%, #697889 75%),
+                              linear-gradient(-45deg, transparent 75%, #697889 75%);
+            background-size: 40px 40px; /* Size of the checkerboard squares */
+            border-radius: 12px;
+            z-index: 0;
+        }
+        
+        #gameCanvas {
+            position: relative;
+            border: 2px solid #ecf0f1;
+            background-color: rgba(0, 0, 0, 0);
+            touch-action: none;
+            max-width: 90vh;
+            max-height: 90vh;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            z-index: 1;
+        }
+
+        .game-info {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            text-align: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ecf0f1;
+            z-index: 2;
+        }
+        
+        #scoreDisplay {
+            width: 33%;
+            text-align: left;
+        }
+        
+        #livesDisplay {
+            width: 33%;
+            text-align: right;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 5px;
+        }
+
+        #pauseButton {
+            display: none;
+        }
+
+        .message-box {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(44, 62, 80, 0.9);
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            display: none;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 100;
+        }
+        #pauseMenu {
+            display: none;
+        }
+
+        .message-box h2 {
+            margin: 0;
+            font-size: 2rem;
+            color: #27ae60;
+        }
+
+        .message-box p {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #ecf0f1;
+        }
+
+        .message-box button {
+            padding: 10px 20px;
+            border: none;
+            background-color: #27ae60;
+            color: white;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .message-box button:hover {
+            background-color: #229954;
+        }
+
+        #startScreen {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(44, 62, 80, 0.9);
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            gap: 15px;
+            z-index: 100;
+        }
+
+        #startScreen h2 {
+            margin: 0;
+            font-size: 2rem;
+            color: #27ae60;
+        }
+
+        #startScreen p {
+            margin: 0;
+            font-size: 1.2rem;
+            color: #ecf0f1;
+        }
+
+        #startButton {
+            padding: 10px 20px;
+            border: none;
+            background-color: #27ae60;
+            color: white;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #startButton:hover {
+            background-color: #229954;
+        }
+        
+        #dialogScreen {
+            display: none; /* Initially hidden */
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 25px;
+            text-align: center;
+            z-index: 100;
+        }
+
+        .speech-bubble {
+            position: relative;
+            background: #fff;
+            color: #2c3e50;
+            border-radius: .4em;
+            padding: 20px;
+            font-size: 1.2rem;
+            max-width: 80vw;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            cursor: pointer;
+        }
+
+        .speech-bubble:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border: 20px solid transparent;
+            border-top-color: #fff;
+            border-bottom: 0;
+            border-left: 0;
+            margin-left: -10px;
+            margin-bottom: -20px;
+        }
+
+        .card-icon {
+            width: 25px;
+            height: 25px;
+            background-color: #f1c40f;
+            border-radius: 5px;
+            border: 1px solid #c0a000;
+        }
+        
+        #touchControls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none; /* Allows clicks to pass through to the canvas */
+            z-index: 2;
+        }
+
+        .touch-area {
+            width: 50%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            pointer-events: auto; /* Re-enable pointer events for the areas */
+            padding-bottom: 20px;
+        }
+        
+        .arrow {
+            width: 0;
+            height: 0;
+            border-top: 30px solid transparent;
+            border-bottom: 30px solid transparent;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+
+        .arrow.left {
+            border-right: 40px solid white;
+        }
+
+        .arrow.right {
+            border-left: 40px solid white;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div class="game-info">
+            <div id="scoreDisplay">Schrauben: 0/100</div>
+            <button id="pauseButton">Mittagspause</button>
+            <div id="livesDisplay">
+                <span>Übrige Ermahnungen: </span>
+                <span class="card-icon"></span>
+                <span class="card-icon"></span>
+            </div>
+        </div>
+        <div id="gameBackground"></div>
+        <canvas id="gameCanvas"></canvas>
+        
+        <!-- Touch Controls -->
+        <div id="touchControls">
+            <div class="touch-area left-touch-area">
+                <div class="arrow left"></div>
+            </div>
+            <div class="touch-area right-touch-area">
+                <div class="arrow right"></div>
+            </div>
+        </div>
+
+        <div id="messageBox" class="message-box">
+            <h2 id="messageTitle"></h2>
+            <p id="messageText"></p>
+            <div id="winButtons" style="display: flex; gap: 10px; justify-content: center;">
+                <button id="continueButton">Überstunden</button>
+                <button id="restartButton">Neustart</button>
+            </div>
+            <button id="gameOverRestartButton" style="display: none;">Neustart</button>
+        </div>
+
+        <div id="pauseMenu" class="message-box">
+            <h2>Spiel pausiert</h2>
+            <button id="resumeButton">Fortsetzen</button>
+            <button id="pauseRestartButton">Neustart</button>
+        </div>
+
+        <div id="startScreen">
+            <h2>Gabelstapler-Spiel</h2>
+            <p>Drücke "Starten" um loszulegen.</p>
+            <button id="startButton">Starten</button>
+        </div>
+
+        <div id="dialogScreen">
+            <div class="speech-bubble">
+                <p>Willkommen, Gabelstapler-Fahrer!</p>
+                <p>Herr Knauf möchte 100 Schrauben für sein neues Projekt.</p>
+                <p>Sammle sie, ohne die Paletten zu beschädigen oder Mitarbeiter zu verletzen. Viel Spaß!</p>
+                <p style="font-weight: bold; text-align: center;">Klicke hier, um zu beginnen!</p>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Get canvas and its context for drawing
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const livesDisplay = document.getElementById('livesDisplay');
+        const messageBox = document.getElementById('messageBox');
+        const messageTitle = document.getElementById('messageTitle');
+        const messageText = document.getElementById('messageText');
+        const winButtons = document.getElementById('winButtons');
+        const continueButton = document.getElementById('continueButton');
+        const restartButton = document.getElementById('restartButton');
+        const gameOverRestartButton = document.getElementById('gameOverRestartButton');
+        const startScreen = document.getElementById('startScreen');
+        const startButton = document.getElementById('startButton');
+        const dialogScreen = document.getElementById('dialogScreen');
+        const gameBackground = document.getElementById('gameBackground');
+        const pauseButton = document.getElementById('pauseButton');
+        const pauseMenu = document.getElementById('pauseMenu');
+        const resumeButton = document.getElementById('resumeButton');
+        const pauseRestartButton = document.getElementById('pauseRestartButton');
+        const touchControls = document.getElementById('touchControls');
+        const leftTouchArea = document.querySelector('.left-touch-area');
+        const rightTouchArea = document.querySelector('.right-touch-area');
+
+        let isTouchEnabled = 'ontouchstart' in window;
+        let gameActive = false;
+        let lastTimestamp = 0;
+        let score = 0;
+        let lives = 2; // Added lives variable
+        let touchX = null;
+        let isLeftArrowPressed = false;
+        let isRightArrowPressed = false;
+        let winConditionMet = false;
+        let isPaused = false;
+        let collisionCooldown = false;
+
+        // Variables for dynamic obstacle spawning
+        let initialObstacleSpeed = 100;
+        let initialSpawnInterval = 1; // Time in seconds between spawns
+        let obstacleSpeed = initialObstacleSpeed;
+        let obstacleSpawnInterval = initialSpawnInterval;
+        let timeSinceLastObstacle = 0;
+
+        // Variables for collectible spawning
+        let collectibleSpawnInterval = 2; // Time in seconds between spawns
+        let timeSinceLastCollectible = 0;
+        let collectibleSpeed = 120; // Speed at which collectibles fall
+        
+        // Variables for person spawning
+        let personSpawnInterval = 3; // Time in seconds between spawns
+        let timeSinceLastPerson = 0;
+        let personHorizontalSpeed = 50; // New variable for horizontal speed of people
+
+        // Player (Forklift) object
+        const forklift = {
+            x: 0,
+            y: 0,
+            width: 70, 
+            height: 110,
+            speed: 200, // pixels per second
+        };
+
+        // Array to hold obstacles, collectibles, and people
+        const obstacles = [];
+        const collectibles = [];
+        const people = [];
+        
+        // Array of colors for the obstacles
+        const obstacleColors = ['#f1c40f', '#3498db', '#e74c3c', '#ecf0f1', '#bdc3c7'];
+
+        // SVG string for the collectible (the "Schraubenkiste")
+        const collectibleSvgString = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+            <g>
+                <!-- Kiste -->
+                <rect x="10" y="20" width="80" height="60" fill="#8B4513" stroke="#5d4037" stroke-width="2" rx="5" ry="5" />
+                <path d="M10,20 L50,10 L90,20" fill="none" stroke="#5d4037" stroke-width="2" />
+                <path d="M50,10 L50,80" fill="none" stroke="#5d4037" stroke-width="2" />
+                <!-- Schrauben -->
+                <g fill="#c0c0c0">
+                    <circle cx="25" cy="35" r="3"/>
+                    <circle cx="75" cy="45" r="3"/>
+                    <circle cx="45" cy="65" r="3"/>
+                    <circle cx="65" cy="30" r="3"/>
+                    <circle cx="30" cy="55" r="3"/>
+                    <circle cx="50" cy="40" r="3"/>
+                    <circle cx="80" cy="60" r="3"/>
+                    <circle cx="20" cy="70" r="3"/>
+                    <circle cx="60" cy="75" r="3"/>
+                </g>
+            </g>
+        </svg>`;
+        
+        // Create an Image object to hold the SVG
+        const collectibleImage = new Image();
+        let collectibleImageLoaded = false;
+        collectibleImage.onload = () => {
+            collectibleImageLoaded = true;
+        };
+        collectibleImage.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(collectibleSvgString);
+        
+        // SVG string for the person (the "Metalworker")
+        const personSvgString = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2">
+    <!-- Body -->
+    <path d="M 50 40 L 40 70 M 50 40 L 60 70 M 40 70 L 40 90 M 60 70 L 60 90" stroke="#34495e"/>
+    <!-- Head -->
+    <circle cx="50" cy="30" r="10" fill="#c0a08a" stroke="#c0a08a"/>
+    <!-- Hard Hat -->
+    <path d="M 35 25 Q 50 15, 65 25 L 65 30 L 35 30 Z" fill="#27ae60" stroke="#229954"/>
+    <!-- Hard Hat Brim -->
+    <path d="M 35 30 H 65" stroke="#229954"/>
+    <!-- Tools in hand -->
+    <line x1="40" y1="70" x2="30" y2="60" stroke="#7f8c8d"/>
+    <line x1="60" y1="70" x2="70" y2="60" stroke="#7f8c8d"/>
+  </g>
+</svg>`;
+
+        // Create an Image object to hold the SVG for the person
+        const personImage = new Image();
+        let personImageLoaded = false;
+        personImage.onload = () => {
+            personImageLoaded = true;
+        };
+        personImage.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(personSvgString);
+
+        // SVG string for the Forklift from a top-down perspective
+        const forkliftSvgString = `<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+            <style>
+                .forklift-body { fill: #f1c40f; }
+                .forks { fill: #c0c0c0; }
+                .cabin { fill: #ecf0f1; }
+                .wheels { fill: #34495e; }
+                .box { fill: #e74c3c; }
+                .lights { fill: #f39c12; }
+            </style>
+            <rect x="20" y="30" width="60" height="60" rx="8" ry="8" class="forklift-body"/>
+            <rect x="40" y="10" width="20" height="20" rx="3" ry="3" class="cabin"/>
+            <rect x="15" y="80" width="10" height="15" rx="3" ry="3" class="wheels"/>
+            <rect x="75" y="80" width="10" height="15" rx="3" ry="3" class="wheels"/>
+            <rect x="45" y="10" width="10" height="20" rx="2" ry="2" fill="#34495e"/>
+            <rect x="35" y="0" width="30" height="15" rx="3" ry="3" class="box"/>
+            <circle cx="25" cy="35" r="3" class="lights"/>
+            <circle cx="75" cy="35" r="3" class="lights"/>
+        </svg>`;
+        
+        // Create an Image object to hold the SVG for the forklift
+        const forkliftImage = new Image();
+        let forkliftImageLoaded = false;
+        forkliftImage.onload = () => {
+            forkliftImageLoaded = true;
+        };
+        forkliftImage.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(forkliftSvgString);
+
+        // Function to resize canvas and set initial positions
+        function resizeCanvas() {
+            const size = Math.min(window.innerWidth, window.innerHeight) * 0.9;
+            canvas.width = size;
+            canvas.height = size;
+            gameBackground.style.width = `${size}px`;
+            gameBackground.style.height = `${size}px`;
+            
+            forklift.x = (canvas.width / 2) - (forklift.width / 2);
+            forklift.y = canvas.height - forklift.height - 20;
+
+            obstacles.length = 0; 
+            collectibles.length = 0;
+            people.length = 0;
+        }
+        
+        // Function to create and place a single obstacle
+        function spawnObstacle() {
+            const obstacleTypes = ['square', 'rect_h', 'rect_v', 'triangle'];
+            const type = obstacleTypes[Math.floor(Math.random() * obstacleTypes.length)];
+            let width, height;
+
+            switch(type) {
+                case 'square':
+                    width = 40;
+                    height = 40;
+                    break;
+                case 'rect_h': // Horizontal rectangle
+                    width = 60;
+                    height = 30;
+                    break;
+                case 'rect_v': // Vertical rectangle
+                    width = 30;
+                    height = 60;
+                    break;
+                case 'triangle':
+                    width = 50;
+                    height = 50;
+                    break;
+            }
+            
+            const x = Math.random() * (canvas.width - width);
+            const y = -height; // Start above the canvas
+            const color = obstacleColors[Math.floor(Math.random() * obstacleColors.length)];
+
+            obstacles.push({
+                x: x,
+                y: y,
+                width: width,
+                height: height,
+                color: color,
+                speed: obstacleSpeed,
+                type: type
+            });
+        }
+
+        // Function to create and place a single collectible
+        function spawnCollectible() {
+            const collectibleRadius = 25; // Increased radius for better visibility
+            const x = Math.random() * (canvas.width - collectibleRadius * 2) + collectibleRadius;
+            const y = -collectibleRadius * 2; // Start above the canvas
+
+            collectibles.push({
+                x: x,
+                y: y,
+                radius: collectibleRadius,
+                scoreValue: 5, // Each coin is now worth 5 points
+                speed: collectibleSpeed // Speed at which collectibles fall
+            });
+        }
+
+        // Function to create and place a single person
+        function spawnPerson() {
+            const personWidth = 35; // Made smaller
+            const personHeight = 70; // Made smaller
+            const fromLeft = Math.random() > 0.5; // Randomly decide if person comes from left or right
+            const x = fromLeft ? -personWidth : canvas.width;
+            const y = -personHeight; // Start above the canvas
+
+            people.push({
+                x: x,
+                y: y,
+                width: personWidth,
+                height: personHeight,
+                color: '#5d4037', // Dark brown
+                xSpeed: fromLeft ? personHorizontalSpeed : -personHorizontalSpeed,
+                ySpeed: obstacleSpeed // Use the same speed as obstacles
+            });
+        }
+        
+        // Function to draw all game elements
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw Obstacles
+            obstacles.forEach(obstacle => {
+                 // Draw the wood plank slightly bigger and below the pallet
+                if (obstacle.type !== 'triangle') {
+                    ctx.fillStyle = '#8B4513'; // Dark brown for wood
+                    ctx.fillRect(obstacle.x - 5, obstacle.y + 5, obstacle.width + 10, obstacle.height + 5);
+                }
+
+                 ctx.fillStyle = obstacle.color;
+                 if (obstacle.type === 'triangle') {
+                    ctx.beginPath();
+                    ctx.moveTo(obstacle.x + obstacle.width / 2, obstacle.y);
+                    ctx.lineTo(obstacle.x, obstacle.y + obstacle.height);
+                    ctx.lineTo(obstacle.x + obstacle.width, obstacle.y + obstacle.height);
+                    ctx.closePath();
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                }
+            });
+
+            // Draw Collectibles (using the SVG)
+            if (collectibleImageLoaded) {
+                collectibles.forEach(collectible => {
+                    const drawSize = collectible.radius * 2;
+                    ctx.drawImage(collectibleImage, collectible.x - collectible.radius, collectible.y - collectible.radius, drawSize, drawSize);
+                });
+            } else {
+                 // Fallback to drawing circles if SVG is not yet loaded
+                collectibles.forEach(collectible => {
+                    ctx.beginPath();
+                    ctx.arc(collectible.x, collectible.y, collectible.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = '#27ae60';
+                    ctx.fill();
+                    ctx.closePath();
+                });
+            }
+            
+            // Draw People
+            if (personImageLoaded) {
+                people.forEach(person => {
+                    ctx.drawImage(personImage, person.x, person.y, person.width, person.height);
+                });
+            } else {
+                // Fallback to drawing rectangles if SVG is not yet loaded
+                ctx.fillStyle = '#5d4037'; 
+                people.forEach(person => {
+                    ctx.fillRect(person.x, person.y, person.width, person.height);
+                });
+            }
+
+            // Draw Forklift
+            if (forkliftImageLoaded) {
+                ctx.drawImage(forkliftImage, forklift.x, forklift.y, forklift.width, forklift.height);
+            } else {
+                ctx.fillStyle = '#f39c12';
+                ctx.fillRect(forklift.x, forklift.y, forklift.width, forklift.height);
+            }
+        }
+
+        // Main update loop
+        function update(deltaTime) {
+            // Player input logic
+            let moveDirection = 0;
+            if (isLeftArrowPressed) {
+                moveDirection = -1;
+            } else if (isRightArrowPressed) {
+                moveDirection = 1;
+            } else if (isTouchEnabled && touchX !== null) {
+                if (touchX < canvas.width / 2) {
+                    moveDirection = -1;
+                } else {
+                    moveDirection = 1;
+                }
+            }
+            
+            // Update forklift position
+            forklift.x += moveDirection * forklift.speed * deltaTime;
+
+            // Boundary checks
+            if (forklift.x < 0) {
+                forklift.x = 0;
+            }
+            if (forklift.x + forklift.width > canvas.width) {
+                forklift.x = canvas.width - forklift.width;
+            }
+
+            // Update background movement based on obstacle speed
+            const backgroundSpeedFactor = 0.01; // Adjust this factor for speed
+            const currentY = parseFloat(gameBackground.style.backgroundPositionY) || 0;
+            gameBackground.style.backgroundPositionY = `${currentY + obstacleSpeed * backgroundSpeedFactor}px`;
+
+
+            // Update obstacles
+            for (const obstacle of obstacles) {
+                obstacle.y += obstacle.speed * deltaTime;
+            }
+
+            // Remove obstacles that have gone off-screen
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                if (obstacles[i].y > canvas.height) {
+                    obstacles.splice(i, 1);
+                }
+            }
+
+            // Spawn new obstacles
+            timeSinceLastObstacle += deltaTime;
+            if (timeSinceLastObstacle >= obstacleSpawnInterval) {
+                spawnObstacle();
+                timeSinceLastObstacle = 0;
+            }
+
+            // Update collectibles
+            for (const collectible of collectibles) {
+                collectible.y += collectible.speed * deltaTime;
+            }
+
+            // Remove collectibles that have gone off-screen
+            for (let i = collectibles.length - 1; i >= 0; i--) {
+                if (collectibles[i].y > canvas.height) {
+                    collectibles.splice(i, 1);
+                }
+            }
+            
+            // Spawn new collectibles
+            timeSinceLastCollectible += deltaTime;
+            if (timeSinceLastCollectible >= collectibleSpawnInterval) {
+                spawnCollectible();
+                timeSinceLastCollectible = 0;
+            }
+            
+            // Update people
+            for (const person of people) {
+                person.x += person.xSpeed * deltaTime;
+                person.y += person.ySpeed * deltaTime;
+            }
+
+            // Remove people that have gone off-screen
+            for (let i = people.length - 1; i >= 0; i--) {
+                if (people[i].y > canvas.height) {
+                    people.splice(i, 1);
+                }
+            }
+            
+            // Spawn new people only when score >= 50
+            timeSinceLastPerson += deltaTime;
+            if (score >= 50 && timeSinceLastPerson >= personSpawnInterval) {
+                spawnPerson();
+                timeSinceLastPerson = 0;
+            }
+
+            // Check for collisions with obstacles
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obstacle = obstacles[i];
+                 if (
+                    forklift.x < obstacle.x + obstacle.width &&
+                    forklift.x + forklift.width > obstacle.x &&
+                    forklift.y < obstacle.y + obstacle.height &&
+                    forklift.y + forklift.height > obstacle.y
+                ) {
+                    if (lives > 0) {
+                        lives--;
+                        updateLivesDisplay();
+                        obstacles.splice(i, 1); // Remove the collided obstacle
+                        // Maybe add a temporary invincibility or flash effect here
+                    } else {
+                        gameOver(false, 'Du hast eine Palette getroffen!');
+                        return;
+                    }
+                }
+            }
+
+            // Check for collisions with collectibles
+            for (let i = collectibles.length - 1; i >= 0; i--) {
+                const collectible = collectibles[i];
+                if (
+                    forklift.x < collectible.x + collectible.radius * 2 &&
+                    forklift.x + forklift.width > collectible.x &&
+                    forklift.y < collectible.y + collectible.radius * 2 &&
+                    forklift.y + forklift.height > collectible.y
+                ) {
+                    score += collectible.scoreValue;
+                    scoreDisplay.textContent = `Schrauben: ${score}/100`;
+                    collectibles.splice(i, 1);
+
+                    if (winConditionMet) {
+                        obstacleSpeed += 0.5;
+                        collectibleSpeed += 0.5;
+                        personHorizontalSpeed += 0.5;
+                        obstacleSpawnInterval = Math.max(0.2, obstacleSpawnInterval - 0.005);
+                        personSpawnInterval = Math.max(0.2, personSpawnInterval - 0.005);
+                    } else {
+                         if(score % 10 === 0) {
+                            obstacleSpeed += 5;
+                            collectibleSpeed += 5;
+                            personHorizontalSpeed += 5;
+                            obstacleSpawnInterval = Math.max(0.2, obstacleSpawnInterval - 0.05);
+                         }
+                    }
+                }
+            }
+            
+            // Check for collisions with people
+            for (const person of people) {
+                if (
+                    forklift.x < person.x + person.width &&
+                    forklift.x + forklift.width > person.x &&
+                    forklift.y < person.y + person.height &&
+                    forklift.y + forklift.height > person.y
+                ) {
+                    gameOver(false, 'Du hast eine Person angefahren!');
+                    return;
+                }
+            }
+
+            // Check for win condition (100 points)
+            if (score >= 100 && !winConditionMet) {
+                gameOver(true);
+                return;
+            }
+        }
+
+        // Animation loop
+        function gameLoop(timestamp) {
+            if (!gameActive || isPaused) {
+                requestAnimationFrame(gameLoop);
+                return;
+            }
+
+            const deltaTime = (timestamp - lastTimestamp) / 1000;
+            lastTimestamp = timestamp;
+
+            update(deltaTime);
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateLivesDisplay() {
+            livesDisplay.innerHTML = `<span>Übrige Ermahnungen: </span>`;
+            for (let i = 0; i < lives; i++) {
+                const card = document.createElement('span');
+                card.classList.add('card-icon');
+                livesDisplay.appendChild(card);
+            }
+        }
+
+        // Start the game
+        function resetGameAndStart() {
+            startScreen.style.display = 'none';
+            dialogScreen.style.display = 'none';
+            messageBox.style.display = 'none';
+            pauseMenu.style.display = 'none';
+            pauseButton.style.display = 'block';
+            
+            gameActive = true;
+            isPaused = false;
+            score = 0;
+            lives = 2; // Reset lives
+            winConditionMet = false;
+            obstacleSpeed = initialObstacleSpeed;
+            obstacleSpawnInterval = initialSpawnInterval;
+            scoreDisplay.textContent = `Schrauben: ${score}/100`;
+            updateLivesDisplay();
+            resizeCanvas();
+            obstacles.length = 0; // Clear obstacles on restart
+            collectibles.length = 0; // Clear collectibles on restart
+            people.length = 0; // Clear people on restart
+            spawnObstacle(); // Spawn the first obstacle
+            spawnCollectible(); // Spawn the first collectible
+            timeSinceLastObstacle = 0;
+            timeSinceLastCollectible = 0;
+            timeSinceLastPerson = 0;
+            lastTimestamp = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+        
+        // Show dialog screen before game starts
+        function showDialogAndStart() {
+            startScreen.style.display = 'none';
+            dialogScreen.style.display = 'flex';
+        }
+        
+        function continueGame() {
+            messageBox.style.display = 'none';
+            gameActive = true;
+            isPaused = false;
+            lastTimestamp = performance.now();
+            winConditionMet = true;
+            pauseButton.style.display = 'block';
+            requestAnimationFrame(gameLoop);
+        }
+
+        function togglePause() {
+            if (gameActive && !isPaused) {
+                gameActive = false;
+                isPaused = true;
+                pauseMenu.style.display = 'flex';
+                pauseButton.style.display = 'none'; // Hide pause button when menu is open
+            } else if (isPaused) {
+                gameActive = true;
+                isPaused = false;
+                pauseMenu.style.display = 'none';
+                pauseButton.style.display = 'block'; // Show pause button when menu is closed
+                lastTimestamp = performance.now();
+                requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // Game Over screen
+        function gameOver(win, message = '') {
+            gameActive = false;
+            pauseButton.style.display = 'none'; // Hide pause button on game over
+            winButtons.style.display = 'none';
+            gameOverRestartButton.style.display = 'none';
+
+            if (win) {
+                messageTitle.textContent = 'Herzlichen Glückwunsch!';
+                messageText.textContent = 'Herr Knauf ist sehr stolz auf dich. Nun darfst du dir deine Belohnung bei dem Mitarbeiter abholen!';
+                winButtons.style.display = 'flex';
+                winConditionMet = true; // Set win condition to true to prevent triggering again
+            } else {
+                messageTitle.textContent = 'Du wurdest gefeuert';
+                messageText.textContent = message + ` Dein Schraubenstand: ${score}`;
+                gameOverRestartButton.style.display = 'block';
+            }
+            messageBox.style.display = 'flex';
+        }
+        
+        // Event listeners
+        gameOverRestartButton.addEventListener('click', () => {
+            messageBox.style.display = 'none';
+            startScreen.style.display = 'flex';
+        });
+        restartButton.addEventListener('click', () => {
+            messageBox.style.display = 'none';
+            startScreen.style.display = 'flex';
+        });
+        continueButton.addEventListener('click', continueGame);
+        startButton.addEventListener('click', showDialogAndStart);
+        dialogScreen.addEventListener('click', resetGameAndStart);
+
+        // Pause Menu Buttons
+        pauseButton.addEventListener('click', togglePause);
+        resumeButton.addEventListener('click', togglePause);
+        pauseRestartButton.addEventListener('click', () => {
+            pauseMenu.style.display = 'none';
+            startScreen.style.display = 'flex';
+        });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && (gameActive || isPaused)) {
+                togglePause();
+            } else if (gameActive && !isPaused) {
+                if (e.key === 'ArrowLeft') {
+                    isLeftArrowPressed = true;
+                } else if (e.key === 'ArrowRight') {
+                    isRightArrowPressed = true;
+                }
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowLeft') {
+                isLeftArrowPressed = false;
+            } else if (e.key === 'ArrowRight') {
+                isRightArrowPressed = false;
+            }
+        });
+        
+        // Touch events for the touch areas
+        leftTouchArea.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isLeftArrowPressed = true;
+        });
+
+        leftTouchArea.addEventListener('touchend', () => {
+            isLeftArrowPressed = false;
+        });
+        
+        rightTouchArea.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            isRightArrowPressed = true;
+        });
+        
+        rightTouchArea.addEventListener('touchend', () => {
+            isRightArrowPressed = false;
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', resizeCanvas);
+        window.onload = function() {
+            resizeCanvas();
+            startScreen.style.display = 'flex';
+        };
+
+        
+    </script>
